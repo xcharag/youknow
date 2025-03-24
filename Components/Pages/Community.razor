@@ -1,0 +1,406 @@
+@page "/Community"
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<FluentStack Style="justify-content: center; align-items: center">
+    <h1 class="page-title">Diseños de la Comunidad</h1>
+</FluentStack>
+
+<FluentStack Class="page-container" Orientation="Orientation.Horizontal">
+    <div class="section-container" style="width: 50%">
+            <h2 class="section-title">Diseños Destacados</h2>
+            <div class="carousel-container">
+                <div id="featured-carousel" class="carousel">
+                    @foreach (var design in featuredDesigns)
+                    {
+                        <div class="carousel-item @(currentIndex == featuredDesigns.IndexOf(design) ? "active" : "")">
+                            <img src="@design.ImageUrl" alt="@design.Title" style="object-fit: contain"/>
+                            <div class="design-info">
+                                <h3>@design.Title</h3>
+                                <p>@design.Creator</p>
+                                <div class="design-stats">
+                                    <span><FluentIcon Value="@(new Icons.Regular.Size16.Heart())"/> @design.Likes</span>
+                                    <span><FluentIcon Value="@(new Icons.Regular.Size16.Eye())"/> @design.Views</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                <FluentStack Orientation="Orientation.Horizontal">
+                    <FluentButton Appearance="Appearance.Accent" Class="carousel-control prev" OnClick="PreviousDesign" aria-label="Anterior">
+                        <FluentIcon Value="@(new Icons.Filled.Size24.ChevronLeft())" Color="Color.Lightweight"/>
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Accent" Class="carousel-control next" OnClick="NextDesign" aria-label="Siguiente">
+                        <FluentIcon Value="@(new Icons.Filled.Size24.ChevronRight())" Color="Color.Lightweight"/>
+                    </FluentButton>
+                    
+                    <FluentStack Orientation="Orientation.Horizontal" 
+                                 Style="margin-left: 2rem;
+                                        backdrop-filter: blur(3px);
+                                        padding: 0.5rem;
+                                        border-radius: 20px;
+                                        cursor: pointer">
+                        @for (int i = 0; i < featuredDesigns.Count; i++)
+                        {
+                            int index = i;
+                                <FluentButton Class="@(currentIndex == index ? "indicator active" : "indicator")"
+                                              OnClick="@(() => GoToDesign(index))"/>
+                        }
+                    </FluentStack>
+                </FluentStack>
+            </div>
+        </div>
+
+    <div class="section-container" style="width: 50%">
+        <h2 class="section-title">Publicaciones de la Comunidad</h2>
+
+        <div class="post-form">
+            <FluentStack Orientation="Orientation.Horizontal" Class="post-form-header" VerticalAlignment="VerticalAlignment.Center">
+                <FluentAvatar Class="user-avatar" Name="Tú"/>
+                <FluentTextArea Placeholder="Comparte tus ideas o diseños de camisetas..." @bind-Value="newPostText" Resize="TextAreaResize.Both"/>
+            </FluentStack>
+            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" HorizontalAlignment="HorizontalAlignment.End" VerticalAlignment="VerticalAlignment.Center">
+                <FluentButton Appearance="Appearance.Outline" OnClick="@(() => newPostText = "")">Cancelar</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="CreatePost" Disabled="string.IsNullOrWhiteSpace(newPostText)">Publicar</FluentButton>
+            </FluentStack>
+        </div>
+
+        <div class="post-list">
+            @foreach (var post in communityPosts)
+            {
+                <div class="post-item">
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                        <FluentAvatar Class="user-avatar" Name="@post.Author"/>
+                        <div class="post-header">
+                            <h3>@post.Author</h3>
+                            <span class="post-time">@post.PostedTime</span>
+                        </div>
+                    </FluentStack>
+
+                    <p class="post-content">@post.Content</p>
+
+                    @if (!string.IsNullOrEmpty(post.ImageUrl))
+                    {
+                        <div class="post-image">
+                            <img src="@post.ImageUrl" alt="Imagen de diseño"/>
+                        </div>
+                    }
+
+                    <div class="post-actions">
+                        <FluentButton Appearance="Appearance.Lightweight" Class="action-button" OnClick="@(() => LikePost(post))">
+                            <FluentIcon Value="@(PostLiked(post))"/>
+                            <span>@post.Likes</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Lightweight" Class="action-button" OnClick="@(() => RepostPost(post))">
+                            <FluentIcon Value="@(PostReposted(post))"/>
+                            <span>@post.Reposts</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Lightweight" Class="action-button">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Comment())"/>
+                            <span>@post.Comments</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Lightweight" Class="action-button">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Share())"/>
+                            <span>Compartir</span>
+                        </FluentButton>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</FluentStack>
+
+@code {
+    private int currentIndex = 0;
+    private string newPostText = "";
+    private IJSObjectReference? _carouselModule;
+    private IJSObjectReference? _carouselInstance;
+
+    private List<DesignModel> featuredDesigns = new()
+    {
+        new DesignModel {
+            Id = 1,
+            Title = "Camiseta Vibraciones de Verano",
+            Creator = "DiseñadorMaestro",
+            ImageUrl = "./images/community/design1.jpg",
+            Likes = 235,
+            Views = 1450
+        },
+        new DesignModel {
+            Id = 2,
+            Title = "Monocromo Minimalista",
+            Creator = "ArtistaX",
+            ImageUrl = "/images/community/design2.jpg",
+            Likes = 187,
+            Views = 932
+        },
+        new DesignModel {
+            Id = 3,
+            Title = "Estampado Vintage",
+            Creator = "RetroDesigner",
+            ImageUrl = "/images/community/design3.jpg",
+            Likes = 164,
+            Views = 715
+        },
+        new DesignModel {
+            Id = 4,
+            Title = "Geométrico Urbano",
+            Creator = "UrbanStyle",
+            ImageUrl = "/images/community/design4.jpg",
+            Likes = 142,
+            Views = 623
+        },
+        new DesignModel {
+            Id = 5,
+            Title = "Naturaleza Salvaje",
+            Creator = "EcoVerde",
+            ImageUrl = "/images/community/design5.jpg",
+            Likes = 118,
+            Views = 490
+        }
+    };
+
+    private List<PostModel> communityPosts = new()
+    {
+        new PostModel {
+            Id = 1,
+            Author = "GuruCamisetas",
+            Content = "¡Acabo de terminar el diseño de mi nueva colección de verano! ¿Qué opináis de estos colores vibrantes para la temporada?",
+            ImageUrl = "/images/community/post1.jpg",
+            PostedTime = "hace 2 horas",
+            Likes = 42,
+            Comments = 7,
+            Reposts = 5
+        },
+        new PostModel {
+            Id = 2,
+            Author = "DiseñosInnovadores",
+            Content = "Estoy experimentando con estas combinaciones de colores para una línea de sudaderas. ¿Cuál es vuestra favorita? Me inclino por la tercera pero no estoy seguro.",
+            ImageUrl = "/images/community/post2.jpg",
+            PostedTime = "hace 5 horas",
+            Likes = 28,
+            Comments = 12,
+            Reposts = 3
+        },
+        new PostModel {
+            Id = 3,
+            Author = "ModaCreativa",
+            Content = "Acabo de lanzar mi tienda online con diseños personalizados. ¡Echad un vistazo y decidme qué os parece! Ofrezco envío gratuito en los primeros 50 pedidos.",
+            ImageUrl = "/images/community/post3.jpg",
+            PostedTime = "hace 1 día",
+            Likes = 76,
+            Comments = 23,
+            Reposts = 15
+        },
+        new PostModel {
+            Id = 4,
+            Author = "EstiloCallejero",
+            Content = "¿Alguien tiene consejos para mejorar la impresión de diseños detallados en camisetas oscuras? Estoy teniendo problemas con la durabilidad.",
+            PostedTime = "hace 2 días",
+            Likes = 18,
+            Comments = 31,
+            Reposts = 2
+        },
+        new PostModel {
+            Id = 5,
+            Author = "TendenciasModa",
+            Content = "Estas son las tendencias que vienen para este otoño en estampados de camisetas. ¡Lo minimalista vuelve con fuerza!",
+            ImageUrl = "/images/community/post4.jpg",
+            PostedTime = "hace 3 días",
+            Likes = 104,
+            Comments = 16,
+            Reposts = 24
+        }
+    };
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
+    {
+        try
+        {
+            _carouselModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/carousel.js");
+            _carouselInstance = await _carouselModule.InvokeAsync<IJSObjectReference>("initCarousel", "featured-carousel");
+            
+            // Opcional: Configurar una función de callback para mantener sincronizado el índice
+            await JSRuntime.InvokeVoidAsync("window.setCarouselChangeCallback", 
+                DotNetObjectReference.Create(this), "OnCarouselChanged");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al inicializar el carrusel: {ex.Message}");
+        }
+    }
+}
+
+// Para recibir notificaciones de cambio desde JS
+[JSInvokable]
+public void OnCarouselChanged(int newIndex)
+{
+    if (currentIndex != newIndex)
+    {
+        currentIndex = newIndex;
+        StateHasChanged();
+    }
+}
+
+// Mejora los métodos existentes para llamar a las funciones JavaScript
+private async Task PreviousDesign()
+{
+    try
+    {
+        if (_carouselInstance != null)
+        {
+            await _carouselInstance.InvokeVoidAsync("previous");
+        }
+        else
+        {
+            currentIndex = (currentIndex - 1 + featuredDesigns.Count) % featuredDesigns.Count;
+            StateHasChanged();
+        }
+    }
+    catch
+    {
+        // Fallback si JS falla
+        currentIndex = (currentIndex - 1 + featuredDesigns.Count) % featuredDesigns.Count;
+        StateHasChanged();
+    }
+}
+
+private async Task NextDesign()
+{
+    try
+    {
+        if (_carouselInstance != null)
+        {
+            await _carouselInstance.InvokeVoidAsync("next");
+        }
+        else
+        {
+            currentIndex = (currentIndex + 1) % featuredDesigns.Count;
+            StateHasChanged();
+        }
+    }
+    catch
+    {
+        // Fallback si JS falla
+        currentIndex = (currentIndex + 1) % featuredDesigns.Count;
+        StateHasChanged();
+    }
+}
+
+private async Task GoToDesign(int index)
+{
+    try
+    {
+        if (_carouselInstance != null)
+        {
+            await _carouselInstance.InvokeVoidAsync("goToSlide", index);
+        }
+        else
+        {
+            currentIndex = index;
+            StateHasChanged();
+        }
+    }
+    catch
+    {
+        // Fallback si JS falla
+        currentIndex = index;
+        StateHasChanged();
+    }
+}
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_carouselInstance is not null)
+            {
+                await _carouselInstance.DisposeAsync();
+            }
+
+            if (_carouselModule is not null)
+            {
+                await _carouselModule.DisposeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al liberar recursos: {ex.Message}");
+        }
+    }
+
+    private void CreatePost()
+    {
+        if (string.IsNullOrWhiteSpace(newPostText))
+            return;
+
+        var newPost = new PostModel
+        {
+            Id = communityPosts.Count + 1,
+            Author = "Tú",
+            Content = newPostText,
+            PostedTime = "Ahora mismo",
+            Likes = 0,
+            Comments = 0,
+            Reposts = 0
+        };
+
+        communityPosts.Insert(0, newPost);
+        newPostText = "";
+        StateHasChanged();
+    }
+
+    private void LikePost(PostModel post)
+    {
+        post.Liked = !post.Liked;
+        post.Likes += post.Liked ? 1 : -1;
+    }
+
+    private void RepostPost(PostModel post)
+    {
+        post.Reposted = !post.Reposted;
+        post.Reposts += post.Reposted ? 1 : -1;
+    }
+
+    private static Icon PostLiked(PostModel post)
+    {
+        return post.Liked 
+            ? new Icons.Filled.Size20.Heart() 
+            : new Icons.Regular.Size20.Heart();
+    }
+
+    private static Icon PostReposted(PostModel post)
+    {
+        return post.Reposted 
+            ? new Icons.Filled.Size20.Send() 
+            : new Icons.Regular.Size20.Send();
+    }
+
+    public class DesignModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Creator { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+        public int Likes { get; set; }
+        public int Views { get; set; }
+    }
+
+    public class PostModel
+    {
+        public int Id { get; set; }
+        public string Author { get; set; } = "";
+        public string Content { get; set; } = "";
+        public string? ImageUrl { get; set; }
+        public string PostedTime { get; set; } = "";
+        public int Likes { get; set; }
+        public int Comments { get; set; }
+        public int Reposts { get; set; }
+        public bool Liked { get; set; }
+        public bool Reposted { get; set; }
+    }
+}

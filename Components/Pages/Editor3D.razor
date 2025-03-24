@@ -1,0 +1,226 @@
+@page "/Editor"
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+@implements IAsyncDisposable
+
+<PageTitle>T-Shirt Designer - Create Your Custom Look</PageTitle>
+
+<div class="editor-container">
+    <div class="editor-sidebar">
+        <section class="editor-section">
+            <h2>T-Shirt Options</h2>
+            <div class="color-picker">
+                <label>Color:</label>
+                <div class="color-options">
+                    @foreach (var color in _availableColors)
+                    {
+                    <div class="color-swatch @(color == _selectedColor ? "selected" : "")"
+                         style="background-color: @color"
+                         @onclick="() => ChangeShirtColor(color)"></div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="editor-section">
+            <h2>Upload Design</h2>
+            <InputFile OnChange="@OnFileUpload" accept=".jpg,.jpeg,.png,.gif" />
+            <p class="hint-text">Recommended size: 1024×1024px</p>
+        </section>
+
+        <section class="editor-section design-controls @(_hasUploadedImage ? "" : "disabled")">
+            <h2>Design Settings</h2>
+
+            <div class="control-group">
+                <label>Position X:</label>
+                <FluentSlider Min="-50" Max="50" Step="1" Value="@_designOffsetX" TValue="int"
+                              ValueChanged="@(async v => { _designOffsetX = (int)v; await OnOffsetXChanged(); })" />
+            </div>
+
+            <div class="control-group">
+                <label>Position Y:</label>
+                <FluentSlider Min="-50" Max="50" Step="1" Value="@_designOffsetY" TValue="int"
+                              ValueChanged="@(async v => { _designOffsetY = (int)v; await OnOffsetYChanged(); })" />
+            </div>
+
+            <div class="control-group">
+                <label>Scale:</label>
+                <FluentSlider Min="10" Max="100" Step="1" Value="@_designScale" TValue="int"
+                              ValueChanged="@(async v => { _designScale = (int)v;await OnScaleChanged(); })" />
+            </div>
+
+            <div class="control-group">
+                <label>Rotation:</label>
+                <FluentSlider Min="0" Max="360" Step="1" Value="@_designRotation" TValue="int"
+                              ValueChanged="@(async v => { _designRotation = (int)v;await OnRotationChanged(); })" />
+            </div>
+        </section>
+
+        <section class="action-buttons">
+            <FluentButton Appearance="Appearance.Accent" OnClick="SaveDesign">
+                <FluentIcon Value="@(new Icons.Filled.Size20.Save())" />
+                Save Design
+            </FluentButton>
+
+            <FluentButton Appearance="Appearance.Outline" OnClick="ResetDesign">
+                <FluentIcon Value="@(new Icons.Filled.Size20.ArrowReset())" />
+                Reset
+            </FluentButton>
+        </section>
+    </div>
+
+    <div class="viewer-container">
+        <div id="shirt-viewer" class="viewer">
+            
+        </div>
+
+        <div class="viewer-controls">
+            <FluentButton OnClick="@(() => RotateView(-90))">
+                <FluentIcon Value="@(new Icons.Filled.Size20.ArrowLeft())" />
+            </FluentButton>
+
+            <FluentButton OnClick="@(() => ZoomView(1.1))">
+                <FluentIcon Value="@(new Icons.Filled.Size20.ZoomIn())" />
+            </FluentButton>
+
+            <FluentButton OnClick="@(() => ZoomView(0.9))">
+                <FluentIcon Value="@(new Icons.Filled.Size20.ZoomOut())" />
+            </FluentButton>
+
+            <FluentButton OnClick="@(() => RotateView(90))">
+                <FluentIcon Value="@(new Icons.Filled.Size20.ArrowRight())" />
+            </FluentButton>
+        </div>
+    </div>
+</div>
+
+@code {
+private IJSObjectReference? _module;
+private IJSObjectReference? _editorInstance;
+
+private readonly string[] _availableColors = { "#ffffff", "#000000", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#808080" };
+private string _selectedColor = "#ffffff";
+
+private bool _hasUploadedImage = false;
+private int _designOffsetX = 0;
+private int _designOffsetY = 0;
+private int _designScale = 50;
+private int _designRotation = 0;
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+if (firstRender)
+{
+_module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Pages/Editor3D.razor.js");
+_editorInstance = await _module.InvokeAsync<IJSObjectReference>("initEditor", "shirt-viewer");
+}
+}
+
+private async Task ChangeShirtColor(string color)
+{
+_selectedColor = color;
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("setShirtColor", color);
+}
+}
+
+private async Task OnFileUpload(InputFileChangeEventArgs e)
+{
+var file = e.File;
+if (file != null)
+{
+var resizedImage = await file.RequestImageFileAsync("image/png", 1024, 1024);
+var imageBytes = new byte[resizedImage.Size];
+await resizedImage.OpenReadStream().ReadAsync(imageBytes);
+var imageBase64 = Convert.ToBase64String(imageBytes);
+
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("applyDesign", imageBase64);
+_hasUploadedImage = true;
+}
+}
+}
+
+private async Task UpdateDesignSettings()
+{
+if (_editorInstance != null && _hasUploadedImage)
+{
+await _editorInstance.InvokeVoidAsync("updateDesignSettings", _designOffsetX, _designOffsetY, _designScale, _designRotation);
+}
+}
+
+private async Task RotateView(double angle)
+{
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("rotateView", angle);
+}
+}
+
+private async Task ZoomView(double factor)
+{
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("zoomView", factor);
+}
+}
+
+private async Task SaveDesign()
+{
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("saveDesign");
+ToastService.ShowSuccess("Your design has been saved!");
+}
+}
+
+private async Task ResetDesign()
+{
+_hasUploadedImage = false;
+_designOffsetX = 0;
+_designOffsetY = 0;
+_designScale = 50;
+_designRotation = 0;
+
+if (_editorInstance != null)
+{
+await _editorInstance.InvokeVoidAsync("resetDesign");
+}
+}
+
+async ValueTask IAsyncDisposable.DisposeAsync()
+{
+if (_editorInstance != null)
+{
+await _editorInstance.DisposeAsync();
+}
+
+if (_module != null)
+{
+await _module.DisposeAsync();
+
+}
+}
+
+private async Task OnOffsetXChanged()
+{
+    await UpdateDesignSettings();
+}
+
+private async Task OnOffsetYChanged()
+{
+    await UpdateDesignSettings();
+}
+
+private async Task OnScaleChanged()
+{
+    await UpdateDesignSettings();
+}
+
+private async Task OnRotationChanged()
+{
+    await UpdateDesignSettings();
+}
+}

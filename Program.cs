@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FluentUI.AspNetCore.Components;
+using Microsoft.FluentUI.AspNetCore.Components.Components.Tooltip;
 using youknow.Components;
 using youknow.Components.Account;
 using youknow.Data;
@@ -35,6 +37,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+builder.Services.AddFluentUIComponents();
+builder.Services.AddScoped<IToastService, ToastService>();
+builder.Services.AddScoped<IDialogService, DialogService>();
+builder.Services.AddScoped<ITooltipService, TooltipService>();
 
 var app = builder.Build();
 

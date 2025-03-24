@@ -8,14 +8,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.14"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.14"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.14"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.14"/>
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.7" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.11.7" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.11.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Components\Custom\" />
+      <Folder Include="Data\Dto\" />
+      <Folder Include="Data\Entities\" />
+      <Folder Include="Helpers\" />
     </ItemGroup>
 
 </Project>

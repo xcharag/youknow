@@ -9,65 +9,86 @@
         <input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
 
         <div class="nav-items" onclick="document.querySelector('.navbar-toggler').click()">
-            <NavLink href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink href="/" Match="NavLinkMatch.All">
+                <FluentIcon Value="@(new Icons.Filled.Size20.Home())" Color="Color.Lightweight" Style="margin-right: 5px"/>
+                <FluentLabel Typo="Typography.H6" Color="Color.Lightweight">
+                    Inicio
+                </FluentLabel>
             </NavLink>
 
-            <NavLink href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            <NavLink href="Editor">
+                <FluentIcon Value="@(new Icons.Filled.Size20.WindowEdit())" Color="Color.Lightweight" Style="margin-right: 5px"/>
+                <FluentLabel Typo="Typography.H6" Color="Color.Lightweight" Style="white-space: nowrap;">
+                    Editor 3D
+                </FluentLabel>
             </NavLink>
 
-            <NavLink href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            <NavLink href="Community">
+                <FluentIcon Value="@(new Icons.Filled.Size20.PeopleCommunity())" Color="Color.Lightweight" Style="margin-right: 5px"/>
+                <FluentLabel Typo="Typography.H6" Color="Color.Lightweight">
+                    Comunidad
+                </FluentLabel>
             </NavLink>
 
-            <NavLink href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
+            <FluentStack Orientation="Orientation.Horizontal" Style="align-items: center; justify-content: end">
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink href="Account/Manage">
+                            <FluentIcon Value="@(new Icons.Filled.Size20.PersonInfo())" Color="Color.Lightweight" Style="margin-right: 5px"/>
+                            <FluentLabel Typo="Typography.H6">
+                                @context.User.Identity?.Name
+                            </FluentLabel>
+                        </NavLink>
+                        <form action="Account/Logout" method="post">
+                            <AntiforgeryToken/>
+                            <input type="hidden" name="ReturnUrl" value="@_currentUrl"/>
+                            <button type="submit" class="nav-button">
+                                <FluentIcon Value="@(new Icons.Filled.Size20.SignOut())" Color="Color.Warning" Style="margin-right: 5px"/>
+                                <FluentLabel Typo="Typography.H6" Color="Color.Warning">
+                                    Cerrar Sesión
+                                </FluentLabel>
+                            </button>
+                        </form>
+                    </Authorized>
+                    <NotAuthorized>
+                        <NavLink href="Account/Register">
+                            <FluentIcon Value="@(new Icons.Filled.Size20.New())" Color="Color.Success" Style="margin-right: 5px"/>
+                            <FluentLabel Typo="Typography.H6" Color="Color.Success">
+                                Registrarse
+                            </FluentLabel>
+                        </NavLink>
+                        <NavLink href="Account/Login">
+                            <FluentIcon Value="@(new Icons.Filled.Size20.OpenFolder())" Color="Color.Accent" Style="margin-right: 5px"/>
+                            <FluentLabel Typo="Typography.H6" Color="Color.Accent">
+                                Iniciar Sesión
+                            </FluentLabel>
+                        </NavLink>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </FluentStack>
 
-            <AuthorizeView>
-                <Authorized>
-                    <NavLink href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
-                    </NavLink>
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken/>
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
-                        <button type="submit" class="nav-button">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
-                    </form>
-                </Authorized>
-                <NotAuthorized>
-                    <NavLink href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                    <NavLink href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
-                </NotAuthorized>
-            </AuthorizeView>
         </div>
     </div>
 </nav>
 
 @code {
-private string? currentUrl;
+    private string? _currentUrl;
 
-protected override void OnInitialized()
-{
-currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-NavigationManager.LocationChanged += OnLocationChanged;
-}
+    protected override void OnInitialized()
+    {
+        _currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
 
-private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-{
-currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-StateHasChanged();
-}
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
 
-public void Dispose()
-{
-NavigationManager.LocationChanged -= OnLocationChanged;
-}
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
 }

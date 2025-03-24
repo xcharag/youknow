@@ -1,0 +1,95 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Oops! - youknow</PageTitle>
+
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size48.ErrorCircle())" Color="Color.Accent" />
+        </div>
+
+        <h1>¡Vaya! Algo salió mal</h1>
+        <p class="subtitle">Parece que tuvimos un problema al cargar tus increíbles camisetas.</p>
+        
+        @if (ShowRequestId)
+        {
+        <div class="error-code">
+            <span>Referencia del Error:</span> <code>@RequestId</code>
+        </div>
+        }
+
+        <div class="action-buttons">
+            <FluentButton Appearance="Appearance.Accent"
+                          OnClick="NavigateToHome"
+                          Id="buttonHome">
+                <FluentIcon Value="@(new Icons.Filled.Size16.Home())" Slot="start" Color="Color.Lightweight"/>
+                De vuelta al Inicio
+            </FluentButton>
+
+            <FluentButton Appearance="Appearance.Outline"
+                          OnClick="ReloadPage"
+                          Id="buttonAgain">
+                <FluentIcon Value="@(new Icons.Filled.Size16.ArrowRedo())" Slot="start" />
+                <FluentLabel Color="Color.Lightweight">
+                    Intenta de Nuevo
+                </FluentLabel>
+            </FluentButton>
+
+            <FluentButton Appearance="Appearance.Lightweight"
+                          OnClick="NavigateToCommunity"
+                          Type="ButtonType.Button"
+                          Id="buttonCommunity">
+                <FluentIcon Value="@(new Icons.Filled.Size16.PeopleCommunity())" Slot="start" />
+                Visita la Comunidad
+            </FluentButton>
+        </div>
+    </div>
+</div>
+
+@code {
+[CascadingParameter] private HttpContext? HttpContext { get; set; }
+[Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+private string? RequestId { get; set; }
+private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+protected override void OnInitialized() =>
+RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+
+private void NavigateToHome() 
+{
+    try 
+    {
+        NavManager.NavigateTo("/", forceLoad: true);
+    }
+    catch (Exception ex) 
+    {
+        Console.Error.WriteLine($"Navigation error: {ex.Message}");
+    }
+}
+
+private void ReloadPage() 
+{
+    try 
+    {
+        NavManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+    catch (Exception ex) 
+    {
+        Console.Error.WriteLine($"Reload error: {ex.Message}");
+    }
+}
+
+private void NavigateToCommunity() 
+{
+    try 
+    {
+        NavManager.NavigateTo("/Community", forceLoad: true);
+    }
+    catch (Exception ex) 
+    {
+        Console.Error.WriteLine($"Community navigation error: {ex.Message}");
+    }
+}
+}

@@ -1,7 +1,7 @@
 .top-nav {
     width: 100%;
     margin: 1rem auto;
-    background-color: rgba(5, 39, 103, 0.8);
+    background-color: rgba(11, 19, 34, 0.8);
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 0.5rem;
@@ -50,6 +50,7 @@
 .nav-items ::deep a.active {
     background-color: rgba(255, 255, 255, 0.25);
     color: white;
+    font-weight: bold;
 }
 
 .bi {
